@@ -1,0 +1,13 @@
+{
+  "license": "MIT",
+  "types": "",
+  "devDependencies": {},
+  "name": "@react-native-oh-tpl/react-native-ble-plx",
+  "description": "",
+  "main": "index.ets",
+  "type": "module",
+  "version": "3.2.0-0.0.1",
+  "dependencies": {
+    "@rnoh/react-native-openharmony": "file:../react_native_openharmony",
+  }
+}

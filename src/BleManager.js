@@ -6,7 +6,9 @@ import { Service } from './Service'
 import { Characteristic } from './Characteristic'
 import { Descriptor } from './Descriptor'
 import { State, LogLevel, type BleErrorCodeMessageMapping, ConnectionPriority } from './TypeDefinition'
-import { BleModule, EventEmitter } from './BleModule'
+// import { BleModule, EventEmitter } from './BleModule'
+import { EventEmitter } from './BleModule'
+import BleModule from './NativeBlePlx'
 import {
   parseBleError,
   BleError,
@@ -77,7 +79,7 @@ export class BleManager {
     if (restoreStateFunction != null && options.restoreStateIdentifier != null) {
       // $FlowIssue[prop-missing]
       this._activeSubscriptions[this._nextUniqueID()] = this._eventEmitter.addListener(
-        BleModule.RestoreStateEvent,
+        Platform.OS === 'harmony' ? 'RestoreStateEvent' : BleModule.RestoreStateEvent,
         (nativeRestoredState: NativeBleRestoredState) => {
           if (nativeRestoredState == null) {
             restoreStateFunction(null)
@@ -296,7 +298,7 @@ export class BleManager {
     listener: (newState: $Keys<typeof State>) => void,
     emitCurrentState: boolean = false
   ): Subscription => {
-    const subscription: Subscription = this._eventEmitter.addListener(BleModule.StateChangeEvent, listener)
+    const subscription: Subscription = this._eventEmitter.addListener(Platform.OS === 'harmony' ? 'StateChangeEvent' : BleModule.StateChangeEvent, listener)
     const id = this._nextUniqueID()
     var wrappedSubscription: Subscription
 
@@ -360,7 +362,7 @@ export class BleManager {
       )
     }
     // $FlowFixMe: Flow cannot deduce EmitterSubscription type.
-    this._scanEventSubscription = this._eventEmitter.addListener(BleModule.ScanEvent, scanListener)
+    this._scanEventSubscription = this._eventEmitter.addListener(Platform.OS === 'harmony' ? 'ScanEvent' : BleModule.ScanEvent, scanListener)
 
     return this._callPromise(BleModule.startDeviceScan(UUIDs, options))
   }
@@ -508,7 +510,7 @@ export class BleManager {
     }
 
     const subscription: Subscription = this._eventEmitter.addListener(
-      BleModule.DisconnectionEvent,
+      Platform.OS === 'harmony' ? 'DisconnectionEvent' : BleModule.DisconnectionEvent,
       disconnectionListener
     )
 
@@ -1031,7 +1033,7 @@ export class BleManager {
       listener(null, new Characteristic(characteristic, this))
     }
 
-    const subscription: Subscription = this._eventEmitter.addListener(BleModule.ReadEvent, monitorListener)
+    const subscription: Subscription = this._eventEmitter.addListener(Platform.OS === 'harmony' ? 'ReadEvent' : BleModule.ReadEvent, monitorListener)
 
     const id = this._nextUniqueID()
     const wrappedSubscription: Subscription = {
