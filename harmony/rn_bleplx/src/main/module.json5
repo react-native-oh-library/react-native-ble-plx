@@ -1,0 +1,7 @@
+{
+  module: {
+    name: 'rn_bleplx',
+    type: 'har',
+    deviceTypes: ['default'],
+  },
+}

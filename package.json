@@ -1,18 +1,30 @@
 {
-  "name": "react-native-ble-plx",
-  "version": "3.2.0",
+  "name": "@react-native-oh-tpl/react-native-ble-plx",
+  "version": "3.2.0-0.0.1",
   "description": "React Native Bluetooth Low Energy library",
   "main": "src/index",
   "module": "src/index",
   "types": "src/index.d.ts",
   "react-native": "src/index",
   "source": "src/index",
+  "overrides": {
+    "@react-native/codegen": "0.74.0"
+  },
+  "harmony": {
+    "alias": "react-native-ble-plx",
+    "codegenConfig": {
+      "specPaths": [
+        "./src"
+      ]
+    }
+  },
   "files": [
     "src",
     "lib",
     "android",
     "ios",
     "cpp",
+    "harmony",
     "plugin/build",
     "app.plugin.js",
     "*.podspec",
@@ -36,20 +48,14 @@
     "docs": "documentation build src/index.js -o docs --config documentation.yml -f html",
     "typecheck": "tsc --noEmit",
     "lint": "flow && eslint \"**/*.{js,ts,tsx}\" && documentation lint index.js && yarn typecheck",
-    "prepack": "bob build",
     "release": "release-it",
     "example": "yarn --cwd example",
-    "build:android": "cd example/android && ./gradlew assembleDebug --no-daemon --console=plain -PreactNativeArchitectures=arm64-v8a",
-    "test:android": "cd test_project/android && ./gradlew assembleDebug --no-daemon --console=plain -PreactNativeArchitectures=arm64-v8a",
-    "build:ios": "cd example/ios && xcodebuild -workspace BlePlxExample.xcworkspace -scheme BlePlxExample -configuration Debug -sdk iphonesimulator CC=clang CPLUSPLUS=clang++ LD=clang LDPLUSPLUS=clang++ GCC_OPTIMIZATION_LEVEL=0 GCC_PRECOMPILE_PREFIX_HEADER=YES ASSETCATALOG_COMPILER_OPTIMIZATION=time DEBUG_INFORMATION_FORMAT=dwarf COMPILER_INDEX_STORE_ENABLE=NO",
-    "test:ios": "cd test_project/ios && xcodebuild -workspace BlePlxExample.xcworkspace -scheme BlePlxExample -configuration Debug -sdk iphonesimulator ASSETCATALOG_COMPILER_OPTIMIZATION=time DEBUG_INFORMATION_FORMAT=dwarf COMPILER_INDEX_STORE_ENABLE=NO",
     "test:expo": "cd test_project && npx expo prebuild",
     "bootstrap": "yarn example && yarn install && yarn example pods",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build plugin/build lib",
     "build:plugin": "tsc --build plugin",
     "clean:plugin": "expo-module clean plugin",
     "test:plugin": "jest --config plugin/jest.config.js",
-    "prepare": "npm run clean:plugin && npm run build:plugin",
     "lint:plugin": "eslint plugin/src/*"
   },
   "keywords": [
@@ -63,7 +69,10 @@
     "Energy",
     "BLE"
   ],
-  "repository": "https://github.com/dotintent/react-native-ble-plx.git",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/react-native-oh-library/react-native-ble-plx.git"
+  },
   "author": "dotintent (https://withintent.com/)",
   "license": "MIT",
   "bugs": {
@@ -117,7 +126,8 @@
     "@types/react": "^18.2.44"
   },
   "dependencies": {
-    "@expo/config-plugins": "^7.2.5 || ^8.0.0"
+    "@expo/config-plugins": "^7.2.5 || ^8.0.0",
+    "react-native-ble-plx": "3.2.0"
   },
   "peerDependencies": {
     "react": "*",
