@@ -122,6 +122,36 @@ declare module 'react-native-ble-plx' {
   }
 
   /**
+   * The enum of BLE match mode.
+   */
+  export enum MatchMode {
+    /**
+     * Aggressive mode
+     */
+    Aggressive = 1,
+
+    /**
+     * Sticky mode
+     */
+    Sticky = 2
+  }
+
+  /**
+   * Phy type used during scan.
+   */
+  export enum PhyType {
+    /**
+     * Use 1M phy for scanning.
+     */
+    LE_1M = 1,
+
+    /**
+     * Use all supported Phys for scanning.
+     */
+    LE_All_Supported = 255
+  }
+
+  /**
    * Scan callback type for Bluetooth LE scan.
    * @name ScanCallbackType
    */
@@ -155,7 +185,7 @@ declare module 'react-native-ble-plx' {
      */
     allowDuplicates?: boolean
     /**
-     * Scan mode for Bluetooth LE scan [Android only]
+     * Scan mode for Bluetooth LE scan [Android and Harmony]
      */
     scanMode?: ScanMode
     /**
@@ -167,6 +197,18 @@ declare module 'react-native-ble-plx' {
      * https://developer.android.com/reference/android/bluetooth/le/ScanSettings.Builder#setLegacy(boolean)
      */
     legacyScan?: boolean
+    /**
+     * Time of delay for reporting the scan result [Harmony only]
+     */
+    interval?: number;
+    /**
+     * Match mode for Bluetooth LE scan filters hardware match [Harmony only]
+     */
+    matchMode?: MatchMode;
+    /**
+     * Physical Layer used during scan [Harmony only]
+     */
+    phyType?: PhyType;
   }
 
   /**
