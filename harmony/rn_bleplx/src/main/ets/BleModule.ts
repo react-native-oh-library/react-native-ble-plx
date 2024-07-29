@@ -68,7 +68,6 @@ export class BleClientManager {
       return Promise.resolve();
     } catch (e) {
       let bleError = new BleError(BleErrorCode.BluetoothStateChangeFailed, e.message);
-      Logger.debug('Enable: errCode: ' + (e as BusinessError).code + ', errMessage: ' + (e as BusinessError).message);
       return Promise.reject(this.errorConverter.toJs(bleError));
     }
   }
@@ -101,10 +100,8 @@ export class BleClientManager {
         result = 'Resetting';
         break;
     }
-    return new Promise((resolve, reject) => {
-      Logger.debug('State: ' + result);
-      resolve(result);
-    })
+    Logger.debug('State: ' + result);
+    return Promise.resolve(result);
   }
 
   // Mark: Scanning ---------------------------------------------------------------------------------------------------
@@ -124,7 +121,7 @@ export class BleClientManager {
         this.dispatchEvent(BleEvent.scanEvent, [null, result]);
       });
 
-      // 表示扫描结果过滤策略集合，如果不使用过滤的方式，该参数设置为null。
+      // 扫描结果过滤策略集合
       let filters: Array<ble.ScanFilter> = null;
       if (filteredUUIDs && filteredUUIDs.length > 0) {
         filters = [];
@@ -136,7 +133,7 @@ export class BleClientManager {
         })
       }
 
-      ///表示扫描的参数配置，可选参数。
+      // 扫描的参数配置
       let scanOptions: ble.ScanOptions = {};
       if (options?.hasOwnProperty('scanMode')) {
         let scanMode = options?.['scanMode']
@@ -148,15 +145,33 @@ export class BleClientManager {
           scanOptions.dutyMode = ble.ScanDuty.SCAN_MODE_LOW_LATENCY;
         }
       }
+      if (options?.hasOwnProperty('interval')) {
+        scanOptions.interval = options?.['interval'];
+      }
+      if (options?.hasOwnProperty('matchMode')) {
+        let matchMode = options?.['matchMode']
+        if (matchMode == 1) {
+          scanOptions.matchMode = ble.MatchMode.MATCH_MODE_AGGRESSIVE;
+        } else if (matchMode == 2) {
+          scanOptions.matchMode = ble.MatchMode.MATCH_MODE_STICKY;
+        }
+      }
+      if (options?.hasOwnProperty('phyType')) {
+        let phyType = options?.['phyType']
+        if (phyType == 1) {
+          scanOptions.phyType = ble.PhyType.PHY_LE_1M;
+        } else if (phyType == 255) {
+          scanOptions.phyType = ble.PhyType.PHY_LE_ALL_SUPPORTED;
+        }
+      }
 
-      if (scanOptions.dutyMode != undefined) {
+      if (JSON.stringify(scanOptions) != '{}') {
         ble.startBLEScan(filters, scanOptions);
       } else {
         ble.startBLEScan(filters);
       }
       return Promise.resolve();
     } catch (err) {
-      Logger.debug('errCode: ' + (err as BusinessError).code + ', errMessage: ' + (err as BusinessError).message);
       let bleError = new BleError(BleErrorCode.ScanStartFailed, 'Scan start failed.', null);
       this.dispatchEvent(BleEvent.scanEvent, this.errorConverter.toJs(bleError));
       return Promise.reject(this.errorConverter.toJs(bleError));
@@ -172,7 +187,7 @@ export class BleClientManager {
       ble.stopBLEScan();
       return Promise.resolve();
     } catch (err) {
-      Logger.debug('errCode: ' + (err as BusinessError).code + ', errMessage: ' + (err as BusinessError).message);
+      Logger.error('errCode: ' + (err as BusinessError).code + ', errMessage: ' + (err as BusinessError).message);
     }
   }
 
@@ -250,12 +265,13 @@ export class BleClientManager {
     return Promise.resolve(list);
   }
 
-  public getConnectedDevices(deviceIdentifiers: Array<string>): Promise<Object[]> {
+  public getConnectedDevices(serviceUUIDs: Array<string>): Promise<Object[]> {
     var list = Array<ValuesBucket>();
-    deviceIdentifiers.forEach(deviceId => {
-      this.connectedDevices.forEach((value, key) => {
-        if (key == deviceId) {
-          list.push(value.asJSObject());
+    serviceUUIDs.forEach(serviceUUID => {
+      this.connectedDevices.forEach(device => {
+        let service = device.getServiceByUUID(serviceUUID);
+        if (service) {
+          list.push(device.asJSObject());
         }
       })
     })
@@ -287,14 +303,17 @@ export class BleClientManager {
           } else if (state.state == constant.ProfileConnectionState.STATE_CONNECTING) {
             this.dispatchEvent(BleEvent.connectingEvent, deviceIdentifier);
           } else if (state.state == constant.ProfileConnectionState.STATE_DISCONNECTED) {
-            this.dispatchEvent(BleEvent.disconnectionEvent, deviceIdentifier);
+            this.dispatchEvent(BleEvent.disconnectionEvent, [null, client.asJSObject()]);
             this.connectedDevices.delete(deviceIdentifier);
           }
         });
+        device.on('BLEMtuChange', (mtu: number) => {
+          client.mtu = mtu;
+          this.connectedDevices.set(deviceIdentifier, client);
+        })
         device.connect();
         this.dispatchEvent(BleEvent.connectingEvent, deviceIdentifier);
       } catch (err) {
-        Logger.debug('errCode: ' + (err as BusinessError).code + ', errMessage: ' + (err as BusinessError).message);
         let bleError = new BleError(BleErrorCode.DeviceConnectionFailed, err.message, null);
         bleError.deviceID = deviceIdentifier
         reject(this.errorConverter.toJs(bleError));
@@ -324,7 +343,6 @@ export class BleClientManager {
         });
         device.clientDevice.disconnect();
       } catch (err) {
-        Logger.debug('errCode: ' + (err as BusinessError).code + ', errMessage: ' + (err as BusinessError).message);
         let bleError = new BleError(BleErrorCode.DeviceNotConnected, err.message, null);
         bleError.deviceID = deviceIdentifier
         reject(this.errorConverter.toJs(bleError));
@@ -337,8 +355,16 @@ export class BleClientManager {
    * @description 设备是否已连接
    */
   public isDeviceConnected(deviceIdentifier: string): Promise<boolean> {
-    let device = this.connectedDevices.get(deviceIdentifier);
-    return Promise.resolve(device == null ? false : true);
+    let regex = /[A-F\d]{2}:[A-F\d]{2}:[A-F\d]{2}:[A-F\d]{2}:[A-F\d]{2}:[A-F\d]{2}/;
+    if (deviceIdentifier.match(regex)) {
+      let device = this.connectedDevices.get(deviceIdentifier);
+      return Promise.resolve(device == null ? false : true);
+    }
+
+    let bleError = new BleError(BleErrorCode.InvalidIdentifiers, null, null);
+    bleError.deviceID = deviceIdentifier;
+    bleError.internalMessage = deviceIdentifier;
+    return Promise.reject(this.errorConverter.toJs(bleError));
   }
 
   // Mark: Discovery --------------------------------------------------------------------------------------------------
@@ -382,7 +408,6 @@ export class BleClientManager {
         device.setServices(newServiceList);
         resolve(device.asJSObject());
       }).catch(err => {
-        Logger.debug('errCode: ' + (err as BusinessError).code + ', errMessage: ' + (err as BusinessError).message);
         let bleError = new BleError(BleErrorCode.ServicesDiscoveryFailed, err.message, null);
         bleError.deviceID = deviceIdentifier;
         reject(this.errorConverter.toJs(bleError));
@@ -613,7 +638,6 @@ export class BleClientManager {
         let newChar = Characteristic.constructorWithOther(characteristic);
         resolve(newChar.asJSObject());
       }).catch(err => {
-        Logger.debug('errCode: ' + (err as BusinessError).code + ', errMessage: ' + (err as BusinessError).message);
         let bleError = new BleError(BleErrorCode.CharacteristicReadFailed, err.message, null);
         bleError.deviceID = deviceIdentifier
         bleError.serviceUUID = serviceUUID
@@ -699,7 +723,6 @@ export class BleClientManager {
         let newChar = Characteristic.constructorWithOther(characteristic);
         resolve(newChar.asJSObject());
       }).catch(err => {
-        Logger.debug('errCode: ' + (err as BusinessError).code + ', errMessage: ' + (err as BusinessError).message);
         let bleError = new BleError(BleErrorCode.CharacteristicWriteFailed, err.message, null);
         bleError.deviceID = deviceIdentifier
         bleError.serviceUUID = serviceUUID
@@ -780,7 +803,6 @@ export class BleClientManager {
         this.dispatchEvent(BleEvent.readEvent, [null, characteristic.asJSObject(), transactionId]);
         resolve();
       }).catch(err => {
-        Logger.debug('errCode: ' + (err as BusinessError).code + ', errMessage: ' + (err as BusinessError).message);
         let bleError = new BleError(BleErrorCode.CharacteristicNotifyChangeFailed, err.message, null);
         bleError.deviceID = deviceIdentifier
         bleError.serviceUUID = serviceUUID
@@ -835,7 +857,6 @@ export class BleClientManager {
                                  characteristicUUID: string,
                                  descriptorUUID: string,
                                  transactionId: string): Promise<Object> {
-    Logger.debug('ser: ' + serviceUUID + ' char: ' + characteristicUUID + ' des: ' + descriptorUUID);
     return new Promise((resolve, reject) => {
       let device = this.connectedDevices.get(deviceId);
       if (!device) {
@@ -864,7 +885,6 @@ export class BleClientManager {
         let newDes = Descriptor.constructorWithOther(descriptor);
         resolve(newDes.asJSObject());
       }).catch(err => {
-        Logger.debug('errCode: ' + (err as BusinessError).code + ', errMessage: ' + (err as BusinessError).message);
         let bleError = new BleError(BleErrorCode.DescriptorReadFailed, err.message, null);
         bleError.deviceID = deviceId
         bleError.serviceUUID = serviceUUID
@@ -970,7 +990,6 @@ export class BleClientManager {
         let newDesc = Descriptor.constructorWithOther(descriptor)
         resolve(newDesc.asJSObject());
       }).catch(err => {
-        Logger.debug('errCode: ' + (err as BusinessError).code + ', errMessage: ' + (err as BusinessError).message);
         let bleError = new BleError(BleErrorCode.DescriptorWriteFailed, err.message, null);
         bleError.deviceID = deviceId
         bleError.serviceUUID = serviceUUID
@@ -1039,7 +1058,8 @@ export class BleClientManager {
   }
 
   public cancelTransaction(transactionId: string): Promise<void> {
-    return Promise.resolve();
+    let bleError = new BleError(BleErrorCode.UnknownError, null, null);
+    return Promise.reject(this.errorConverter.toJs(bleError));
   }
 
   public setLogLevel(logLevel: string): Promise<string> {

@@ -50,7 +50,7 @@ export interface Subscription {
 /**
  * Type of error code mapping table
  */
-export type BleErrorCodeMessageMapping = { [$Values<typeof BleErrorCode>]: string }
+export type BleErrorCodeMessageMapping = { [$Values < typeof BleErrorCode >]: string }
 
 /**
  * Options which can be passed to when creating BLE Manager
@@ -106,27 +106,57 @@ export interface BleRestoredState {
 export const ScanMode = {
   /**
    * A special Bluetooth LE scan mode. Applications using this scan mode will passively listen for
-   * other scan results without starting BLE scans themselves.
+   * other scan results without starting BLE scans themselves. [Android only]
    */
   Opportunistic: -1,
 
   /**
    * Perform Bluetooth LE scan in low power mode. This is the default scan mode as it consumes the
-   * least power. [default value]
+   * least power. [Android and Harmony] [default value]
    */
   LowPower: 0,
 
   /**
    * Perform Bluetooth LE scan in balanced power mode. Scan results are returned at a rate that
-   * provides a good trade-off between scan frequency and power consumption.
+   * provides a good trade-off between scan frequency and power consumption. [Android and Harmony]
    */
   Balanced: 1,
 
   /**
    * Scan using highest duty cycle. It's recommended to only use this mode when the application is
-   * running in the foreground.
+   * running in the foreground. [Android and Harmony]
    */
   LowLatency: 2
+}
+
+/**
+ * The enum of BLE match mode.
+ */
+export const MatchMode = {
+  /**
+   * Aggressive mode
+   */
+  Aggressive: 1,
+
+  /**
+   * Sticky mode
+   */
+  Sticky: 2
+}
+
+/**
+ * Phy type used during scan.
+ */
+export const PhyType = {
+  /**
+   * Use 1M phy for scanning.
+   */
+  LE_1M: 1,
+
+  /**
+   * Use all supported Phys for scanning.
+   */
+  LE_All_Supported: 255
 }
 
 /**
@@ -166,7 +196,7 @@ export interface ScanOptions {
   allowDuplicates?: boolean;
 
   /**
-   * Scan mode for Bluetooth LE scan [Android only]
+   * Scan mode for Bluetooth LE scan [Android and Harmony]
    * @memberof ScanOptions
    * @instance
    */
@@ -185,6 +215,27 @@ export interface ScanOptions {
    * @instance
    */
   legacyScan?: boolean;
+
+  /**
+   * Time of delay for reporting the scan result [Harmony only]
+   * @memberof ScanOptions
+   * @instance
+   */
+  interval?: number;
+
+  /**
+   * Match mode for Bluetooth LE scan filters hardware match [Harmony only]
+   * @memberof ScanOptions
+   * @instance
+   */
+  matchMode?: $Values<typeof MatchMode>;
+
+  /**
+   * Physical Layer used during scan [Harmony only]
+   * @memberof ScanOptions
+   * @instance
+   */
+  phyType?: $Values<typeof PhyType>;
 }
 
 /**
