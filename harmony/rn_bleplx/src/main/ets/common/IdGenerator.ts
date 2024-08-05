@@ -5,7 +5,12 @@ export class IdGenerator {
   private static nextKey = 0;
 
   static getIdForKey(idGeneratorKey: IdGeneratorKey): number {
-    const id = this.idMap.get(idGeneratorKey);
+    var id: number = undefined;
+    this.idMap.forEach((value, key) => {
+      if (key.equals(idGeneratorKey)) {
+        id = value;
+      }
+    });
     if (id !== undefined) {
       return id;
     }
