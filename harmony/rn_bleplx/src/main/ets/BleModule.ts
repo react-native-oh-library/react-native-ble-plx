@@ -234,21 +234,23 @@ export class BleClientManager {
    * @description 请求MTU
    */
   public requestMTUForDevice(deviceIdentifier: string, mtu: number, transactionId: string): Promise<Object> {
-    let device = this.connectedDevices.get(deviceIdentifier);
-    if (!device) {
-      let bleError = new BleError(BleErrorCode.DeviceNotFound, 'The device is not connected.', null);
-      bleError.deviceID = deviceIdentifier
-      return Promise.reject(this.errorConverter.toJs(bleError));
-    }
+    return new Promise((resolve, reject) => {
+      let device = this.connectedDevices.get(deviceIdentifier);
+      if (!device) {
+        let bleError = new BleError(BleErrorCode.DeviceNotFound, 'The device is not connected.', null);
+        bleError.deviceID = deviceIdentifier
+        reject(this.errorConverter.toJs(bleError));
+      }
 
-    try {
-      device.clientDevice.setBLEMtuSize(mtu);
-      Promise.resolve(device.asJSObject());
-    } catch (error) {
-      let bleError = new BleError(BleErrorCode.DeviceMTUChangeFailed, 'MTU change failed.', null);
-      bleError.deviceID = deviceIdentifier
-      Promise.reject(this.errorConverter.toJs(bleError));
-    }
+      try {
+        device.clientDevice.setBLEMtuSize(mtu);
+        resolve(device.asJSObject());
+      } catch (error) {
+        let bleError = new BleError(BleErrorCode.DeviceMTUChangeFailed, 'MTU change failed.', null);
+        bleError.deviceID = deviceIdentifier
+        reject(this.errorConverter.toJs(bleError));
+      }
+    });
   }
 
   // Mark: Connection Management --------------------------------------------------------------------------------------
@@ -972,31 +974,26 @@ export class BleClientManager {
         return;
       }
 
-      let descriptor = this.getDescriptorWithDeviceId(deviceId, serviceUUID, characteristicUUID, descriptorUUID);
-      if (descriptor == null) {
-        let bleError = new BleError(BleErrorCode.DescriptorNotFound, 'The descriptor does not exist.', null);
-        bleError.deviceID = deviceId
-        bleError.serviceUUID = serviceUUID
-        bleError.characteristicUUID = characteristicUUID
-        bleError.descriptorUUID = descriptorUUID
-        reject(this.errorConverter.toJs(bleError));
-        return;
+      let descriptor: ble.BLEDescriptor = {
+        serviceUuid: serviceUUID,
+        characteristicUuid: characteristicUUID,
+        descriptorUuid: descriptorUUID,
+        descriptorValue: stringToArrayBuffer(valueBase64)
       }
-
-      descriptor.getNativeDescriptor().descriptorValue = stringToArrayBuffer(valueBase64);
-
-      device.clientDevice.writeDescriptorValue(descriptor.getNativeDescriptor()).then(value => {
-        descriptor.setValue(descriptor.getNativeDescriptor().descriptorValue);
-        let newDesc = Descriptor.constructorWithOther(descriptor)
+      try {
+        device.clientDevice.writeDescriptorValue(descriptor)
+        let service = device?.getServiceByUUID(serviceUUID)
+        let characteristic = service?.getCharacteristicByUUID(characteristicUUID)
+        let newDesc = Descriptor.constructorWithNative(characteristic, descriptor)
         resolve(newDesc.asJSObject());
-      }).catch(err => {
+      } catch (err) {
         let bleError = new BleError(BleErrorCode.DescriptorWriteFailed, err.message, null);
         bleError.deviceID = deviceId
         bleError.serviceUUID = serviceUUID
         bleError.characteristicUUID = characteristicUUID
         bleError.descriptorUUID = descriptorUUID
         reject(this.errorConverter.toJs(bleError));
-      });
+      };
     });
   }
 
