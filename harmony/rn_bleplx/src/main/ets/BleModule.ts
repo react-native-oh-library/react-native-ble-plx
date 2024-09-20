@@ -243,8 +243,11 @@ export class BleClientManager {
       }
 
       try {
+        device.clientDevice.on('BLEMtuChange', (result) => {
+          device.mtu = result;
+          resolve(device.asJSObject());
+        });
         device.clientDevice.setBLEMtuSize(mtu);
-        resolve(device.asJSObject());
       } catch (error) {
         let bleError = new BleError(BleErrorCode.DeviceMTUChangeFailed, 'MTU change failed.', null);
         bleError.deviceID = deviceIdentifier
