@@ -6,7 +6,7 @@
   "description": "",
   "main": "index.ets",
   "type": "module",
-  "version": "3.2.0-0.0.2",
+  "version": "3.2.0-0.0.3",
   "dependencies": {
     "@rnoh/react-native-openharmony": "file:../react_native_openharmony",
   }
