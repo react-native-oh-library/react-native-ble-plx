@@ -90,13 +90,7 @@ export class Characteristic {
   }
 
   public isWritableWithResponse(): boolean {
-    if (this.gattCharacteristic.properties) {
-      if (this.gattCharacteristic.properties.writeNoResponse) {
-        return false
-      }
-      return true;
-    }
-    return false;
+    return this.gattCharacteristic.properties.write ?? false;
   }
 
   public isWritableWithoutResponse(): boolean {

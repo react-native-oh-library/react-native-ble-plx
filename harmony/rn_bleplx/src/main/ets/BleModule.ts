@@ -3,7 +3,7 @@ import access from '@ohos.bluetooth.access';
 import { BusinessError } from '@ohos.base';
 import Logger from './common/Logger'
 import { ValuesBucket, ValueType } from '@kit.ArkData';
-import { stringToArrayBuffer, scanResultToJsObjectConverter } from './common/BleUtils'
+import { base64ToArrayBuffer, scanResultToJsObjectConverter } from './common/BleUtils'
 import { constant } from '@kit.ConnectivityKit';
 import { JSON } from '@kit.ArkTS';
 import { BleErrorToJsObjectConverter } from './common/BleErrorToJsObjectConverter';
@@ -243,8 +243,11 @@ export class BleClientManager {
       }
 
       try {
+        device.clientDevice.on('BLEMtuChange', (result) => {
+          device.mtu = result;
+          resolve(device.asJSObject());
+        });
         device.clientDevice.setBLEMtuSize(mtu);
-        resolve(device.asJSObject());
       } catch (error) {
         let bleError = new BleError(BleErrorCode.DeviceMTUChangeFailed, 'MTU change failed.', null);
         bleError.deviceID = deviceIdentifier
@@ -716,12 +719,28 @@ export class BleClientManager {
         return;
       }
 
-      characteristic.gattCharacteristic.characteristicValue = stringToArrayBuffer(valueBase64);
+      let newDescriptors: Array<ble.BLEDescriptor> = [];
+      characteristic.gattCharacteristic.descriptors.forEach(value => {
+        let newDescriptor: ble.BLEDescriptor = {
+          serviceUuid: value.serviceUuid,
+          characteristicUuid: value.characteristicUuid,
+          descriptorUuid: value.descriptorUuid,
+          descriptorValue: value.descriptorValue
+        }
+        newDescriptors.push(newDescriptor);
+      });
 
-      device.clientDevice.writeCharacteristicValue(characteristic.gattCharacteristic,
+      let newCharacteristic: ble.BLECharacteristic = {
+        serviceUuid: serviceUUID,
+        characteristicUuid: characteristicUUID,
+        characteristicValue: base64ToArrayBuffer(valueBase64),
+        descriptors: newDescriptors
+      };
+
+      device.clientDevice.writeCharacteristicValue(newCharacteristic,
         response ? ble.GattWriteType.WRITE : ble.GattWriteType.WRITE_NO_RESPONSE).then(value => {
         Logger.debug('Write characteristic: ' + JSON.stringify(characteristic), +' value: ' + valueBase64);
-        characteristic.setValue(stringToArrayBuffer(valueBase64));
+        characteristic.setValue(base64ToArrayBuffer(valueBase64));
         let newChar = Characteristic.constructorWithOther(characteristic);
         resolve(newChar.asJSObject());
       }).catch(err => {
@@ -978,7 +997,7 @@ export class BleClientManager {
         serviceUuid: serviceUUID,
         characteristicUuid: characteristicUUID,
         descriptorUuid: descriptorUUID,
-        descriptorValue: stringToArrayBuffer(valueBase64)
+        descriptorValue: base64ToArrayBuffer(valueBase64)
       }
       try {
         device.clientDevice.writeDescriptorValue(descriptor)

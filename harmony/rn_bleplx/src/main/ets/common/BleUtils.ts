@@ -1,16 +1,11 @@
 import { ValuesBucket } from '@kit.ArkData';
 import { ble } from '@kit.ConnectivityKit';
+import { buffer } from '@kit.ArkTS';
 
-// 字符串转ArrayBuffer
-export function stringToArrayBuffer(string: string): ArrayBuffer {
-  var buffer = new ArrayBuffer(string.length);
-  var bufferView = new Uint8Array(buffer);
-
-  for (var i = 0; i < string.length; i++) {
-    bufferView[i] = string.charCodeAt(i);
-  }
-
-  return buffer;
+// Base64转ArrayBuffer
+export function base64ToArrayBuffer(string: string): ArrayBuffer {
+  let dataArray = new Uint8Array(buffer.from(string, 'base64').buffer);
+  return dataArray.buffer;
 }
 
 // ArrayBuffer转Base64
