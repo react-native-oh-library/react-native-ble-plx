@@ -3,7 +3,7 @@ import access from '@ohos.bluetooth.access';
 import { BusinessError } from '@ohos.base';
 import Logger from './common/Logger'
 import { ValuesBucket, ValueType } from '@kit.ArkData';
-import { stringToArrayBuffer, scanResultToJsObjectConverter } from './common/BleUtils'
+import { base64ToArrayBuffer, scanResultToJsObjectConverter } from './common/BleUtils'
 import { constant } from '@kit.ConnectivityKit';
 import { JSON } from '@kit.ArkTS';
 import { BleErrorToJsObjectConverter } from './common/BleErrorToJsObjectConverter';
@@ -716,12 +716,12 @@ export class BleClientManager {
         return;
       }
 
-      characteristic.gattCharacteristic.characteristicValue = stringToArrayBuffer(valueBase64);
+      characteristic.gattCharacteristic.characteristicValue = base64ToArrayBuffer(valueBase64);
 
       device.clientDevice.writeCharacteristicValue(characteristic.gattCharacteristic,
         response ? ble.GattWriteType.WRITE : ble.GattWriteType.WRITE_NO_RESPONSE).then(value => {
         Logger.debug('Write characteristic: ' + JSON.stringify(characteristic), +' value: ' + valueBase64);
-        characteristic.setValue(stringToArrayBuffer(valueBase64));
+        characteristic.setValue(base64ToArrayBuffer(valueBase64));
         let newChar = Characteristic.constructorWithOther(characteristic);
         resolve(newChar.asJSObject());
       }).catch(err => {
@@ -978,7 +978,7 @@ export class BleClientManager {
         serviceUuid: serviceUUID,
         characteristicUuid: characteristicUUID,
         descriptorUuid: descriptorUUID,
-        descriptorValue: stringToArrayBuffer(valueBase64)
+        descriptorValue: base64ToArrayBuffer(valueBase64)
       }
       try {
         device.clientDevice.writeDescriptorValue(descriptor)
