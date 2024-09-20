@@ -719,9 +719,25 @@ export class BleClientManager {
         return;
       }
 
-      characteristic.gattCharacteristic.characteristicValue = base64ToArrayBuffer(valueBase64);
+      let newDescriptors: Array<ble.BLEDescriptor> = [];
+      characteristic.gattCharacteristic.descriptors.forEach(value => {
+        let newDescriptor: ble.BLEDescriptor = {
+          serviceUuid: value.serviceUuid,
+          characteristicUuid: value.characteristicUuid,
+          descriptorUuid: value.descriptorUuid,
+          descriptorValue: value.descriptorValue
+        }
+        newDescriptors.push(newDescriptor);
+      });
 
-      device.clientDevice.writeCharacteristicValue(characteristic.gattCharacteristic,
+      let newCharacteristic: ble.BLECharacteristic = {
+        serviceUuid: serviceUUID,
+        characteristicUuid: characteristicUUID,
+        characteristicValue: base64ToArrayBuffer(valueBase64),
+        descriptors: newDescriptors
+      };
+
+      device.clientDevice.writeCharacteristicValue(newCharacteristic,
         response ? ble.GattWriteType.WRITE : ble.GattWriteType.WRITE_NO_RESPONSE).then(value => {
         Logger.debug('Write characteristic: ' + JSON.stringify(characteristic), +' value: ' + valueBase64);
         characteristic.setValue(base64ToArrayBuffer(valueBase64));
