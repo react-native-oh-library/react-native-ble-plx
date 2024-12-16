@@ -1,0 +1,11 @@
+[
+    {
+        "Name": "react-native-ble-plx",
+        "License": "Apache-2.0 license",
+        "License File": "LICENSE",
+        "Version Number": "3.2.0",
+        "Owner" : "xiafeng@huawei.com",
+        "Upstream URL": "https://github.com/dotintent/react-native-ble-plx",
+        "Description": "React Native BLE library"
+    }
+]
