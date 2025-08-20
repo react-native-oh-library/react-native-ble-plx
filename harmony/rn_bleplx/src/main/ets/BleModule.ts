@@ -183,8 +183,11 @@ export class BleClientManager {
    */
   public stopDeviceScan(): Promise<void> {
     try {
-      ble.off("BLEDeviceFind");
-      ble.stopBLEScan();
+      let state = access.getState();
+      if(state === access.BluetoothState.STATE_ON){
+        ble.off("BLEDeviceFind");
+        ble.stopBLEScan();
+      }
       return Promise.resolve();
     } catch (err) {
       Logger.error('errCode: ' + (err as BusinessError).code + ', errMessage: ' + (err as BusinessError).message);
